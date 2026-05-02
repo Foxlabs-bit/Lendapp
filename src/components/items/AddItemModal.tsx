@@ -122,7 +122,8 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
         toast.success(`"${name}" added to your library`)
       }
       handleClose()
-    } catch {
+    } catch (err) {
+      console.error('Add item error:', JSON.stringify(err), err)
       toast.error(editItem ? 'Failed to update item.' : 'Failed to add item. Please try again.')
     }
   }

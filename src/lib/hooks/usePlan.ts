@@ -11,6 +11,6 @@ export function usePlan() {
     isFree: !profile || profile.plan === 'free',
     itemLimit: profile?.item_limit ?? 10,
     check: (action: LimitAction, currentCount?: number) =>
-      profile ? checkLimit(profile, action, currentCount) : { allowed: false, reason: 'Not loaded' },
+      profile ? checkLimit(profile, action, currentCount) : { allowed: true },
   }
 }

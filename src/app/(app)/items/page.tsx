@@ -45,8 +45,10 @@ function ItemsContent() {
   const deleteItem = useDeleteItem()
 
   useEffect(() => {
-    if (searchParams.get('add') === 'true') setAddOpen(true)
-  }, [searchParams])
+    if (searchParams.get('add') === 'true' && !isLoading && profile !== undefined) {
+      handleAddClick()
+    }
+  }, [searchParams, isLoading, profile])
 
   const filtered = useMemo(() => {
     let list = items
