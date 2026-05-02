@@ -16,7 +16,7 @@ export interface LimitResult {
 }
 
 export function checkLimit(profile: Profile, action: LimitAction, currentCount?: number): LimitResult {
-  if (profile.plan === 'pro') return { allowed: true }
+  if (profile.plan === 'pro' || profile.plan === 'org') return { allowed: true }
 
   switch (action) {
     case 'add_item':
@@ -40,39 +40,19 @@ export function checkLimit(profile: Profile, action: LimitAction, currentCount?:
       return { allowed: true }
 
     case 'upload_image':
-      return {
-        allowed: false,
-        reason: 'Image uploads are a Pro feature',
-        upgradeMessage: 'Upgrade to Pro to add photos to your items',
-      }
+      return { allowed: false, reason: 'Image uploads are a Pro feature', upgradeMessage: 'Upgrade to Pro to add photos to your items' }
 
     case 'set_reminder':
-      return {
-        allowed: false,
-        reason: 'Reminders are a Pro feature',
-        upgradeMessage: 'Upgrade to Pro to set loan reminders',
-      }
+      return { allowed: false, reason: 'Reminders are a Pro feature', upgradeMessage: 'Upgrade to Pro to set loan reminders' }
 
     case 'export_csv':
-      return {
-        allowed: false,
-        reason: 'CSV export is a Pro feature',
-        upgradeMessage: 'Upgrade to Pro to export your loan history',
-      }
+      return { allowed: false, reason: 'CSV export is a Pro feature', upgradeMessage: 'Upgrade to Pro to export your loan history' }
 
     case 'view_borrowers':
-      return {
-        allowed: false,
-        reason: 'Borrower contacts are a Pro feature',
-        upgradeMessage: 'Upgrade to Pro to manage your borrower contacts',
-      }
+      return { allowed: false, reason: 'Borrower contacts are a Pro feature', upgradeMessage: 'Upgrade to Pro to manage your borrower contacts' }
 
     case 'view_stats':
-      return {
-        allowed: false,
-        reason: 'Statistics are a Pro feature',
-        upgradeMessage: 'Upgrade to Pro to see detailed loan analytics',
-      }
+      return { allowed: false, reason: 'Statistics are a Pro feature', upgradeMessage: 'Upgrade to Pro to see detailed loan analytics' }
 
     default:
       return { allowed: true }

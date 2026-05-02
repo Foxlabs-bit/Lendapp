@@ -10,26 +10,32 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useProfile, useUpdateProfile } from '@/lib/hooks/useProfile'
+import { useMyOrg, useMyOrgMembership, useLeaveOrg } from '@/lib/hooks/useOrg'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from 'next-themes'
-import { Star, Sun, Moon, Monitor, Loader2, AlertTriangle } from 'lucide-react'
+import { Star, Sun, Moon, Monitor, Loader2, AlertTriangle, Shield, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
 export default function ProfilePage() {
   const { data: profile, isLoading } = useProfile()
   const updateProfile = useUpdateProfile()
+  const { data: myOrg } = useMyOrg()
+  const { data: membership } = useMyOrgMembership()
+  const leaveOrg = useLeaveOrg()
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const supabase = createClient()
 
   const [displayName, setDisplayName] = useState('')
   const [editingName, setEditingName] = useState(false)
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [joinCode, setJoinCode] = useState('')
+  const [joiningOrg, setJoiningOrg] = useState(false)
+  const [leaveConfirm, setLeaveConfirm] = useState(false)
 
   async function handleSaveName() {
     await updateProfile.mutateAsync({ display_name: displayName.trim() || null })
@@ -44,7 +50,6 @@ export default function ProfilePage() {
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) throw error
       toast.success('Password updated')
-      setCurrentPassword('')
       setNewPassword('')
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to update password')
@@ -57,6 +62,32 @@ export default function ProfilePage() {
     const res = await fetch('/api/square/cancel', { method: 'POST' })
     if (res.ok) toast.success('Subscription cancelled')
     else toast.error('Failed to cancel subscription')
+  }
+
+  async function handleJoinOrg() {
+    if (!joinCode.trim()) return
+    setJoiningOrg(true)
+    try {
+      const res = await fetch('/api/org/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ joinCode: joinCode.trim() }) })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Failed to join org'); return }
+      toast.success(`Join request sent to ${data.orgName}! Wait for the owner to approve.`)
+      setJoinCode('')
+    } catch {
+      toast.error('Failed to send join request')
+    } finally {
+      setJoiningOrg(false)
+    }
+  }
+
+  async function handleLeaveOrg() {
+    try {
+      await leaveOrg.mutateAsync()
+      toast.success('Left organization')
+      setLeaveConfirm(false)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to leave org')
+    }
   }
 
   async function handleDeleteAccount() {
@@ -84,6 +115,12 @@ export default function ProfilePage() {
     </>
   )
 
+  const isOrgOwner = profile?.org_role === 'owner'
+  const isOrgMember = !!profile?.org_id && !isOrgOwner
+  const membershipData = membership as { status: string; organizations: { name: string; id: string } | null } | null
+  const isPendingMember = membershipData?.status === 'pending'
+  const orgInfo = membershipData?.organizations ?? null
+
   return (
     <>
       <TopNav title="Profile" />
@@ -101,14 +138,13 @@ export default function ProfilePage() {
                 <p className="font-semibold text-lg flex items-center gap-2">
                   {profile?.display_name ?? profile?.username}
                   {profile?.plan === 'pro' && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                  {profile?.plan === 'org' && <Shield className="h-4 w-4 text-blue-500" />}
                 </p>
                 <p className="text-sm text-muted-foreground">@{profile?.username}</p>
                 <p className="text-sm text-muted-foreground">{profile?.email}</p>
               </div>
             </div>
-
             <Separator />
-
             <div className="space-y-2">
               <Label>Display Name</Label>
               {editingName ? (
@@ -146,17 +182,86 @@ export default function ProfilePage() {
           <CardHeader><CardTitle>Plan</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-3">
-              <Badge className={profile?.plan === 'pro' ? 'bg-yellow-100 text-yellow-700' : 'bg-muted text-muted-foreground'}>
-                {profile?.plan === 'pro' ? '⭐ Pro' : 'Free'}
+              <Badge className={
+                profile?.plan === 'pro' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                profile?.plan === 'org' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                'bg-muted text-muted-foreground'
+              }>
+                {profile?.plan === 'pro' ? '⭐ Pro' : profile?.plan === 'org' ? '🛡️ Org' : 'Free'}
               </Badge>
-              {profile?.plan === 'pro' && <span className="text-sm text-muted-foreground">Next billing: June 1, 2026</span>}
             </div>
-            {profile?.plan === 'pro' ? (
-              <Button variant="outline" size="sm" onClick={handleCancelSubscription}>Cancel Subscription</Button>
-            ) : (
+            {profile?.plan === 'free' && (
               <Link href="/upgrade">
-                <Button size="sm" className="gap-2">Upgrade to Pro — $4.99/mo</Button>
+                <Button size="sm" className="gap-2">Upgrade — from €4.99/mo</Button>
               </Link>
+            )}
+            {profile?.plan === 'pro' && (
+              <Button variant="outline" size="sm" onClick={handleCancelSubscription}>Cancel Subscription</Button>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Organization */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" /> Organization
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {isOrgOwner && myOrg && (
+              <>
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="font-medium">{myOrg.name}</p>
+                    <p className="text-xs text-muted-foreground">You are the owner</p>
+                  </div>
+                </div>
+                <Link href="/org/admin">
+                  <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                    <Shield className="h-4 w-4" /> Open Admin Panel
+                  </Button>
+                </Link>
+              </>
+            )}
+
+            {isOrgMember && !isPendingMember && orgInfo && (
+              <>
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <p className="font-medium">{orgInfo.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">Role: {profile?.org_role}</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setLeaveConfirm(true)}>Leave Organization</Button>
+              </>
+            )}
+
+            {isPendingMember && orgInfo && (
+              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
+                <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Pending approval</p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">Your request to join <strong>{orgInfo.name}</strong> is waiting for the owner to approve.</p>
+              </div>
+            )}
+
+            {!profile?.org_id && !isPendingMember && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Have an org join code? Enter it below to request access.</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="XXXX-XXXX"
+                    value={joinCode}
+                    onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                    className="font-mono uppercase"
+                    maxLength={9}
+                  />
+                  <Button onClick={handleJoinOrg} disabled={joiningOrg || !joinCode.trim()}>
+                    {joiningOrg ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Request'}
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -171,15 +276,8 @@ export default function ProfilePage() {
                 { value: 'dark', icon: Moon, label: 'Dark' },
                 { value: 'system', icon: Monitor, label: 'System' },
               ].map(({ value, icon: Icon, label }) => (
-                <Button
-                  key={value}
-                  variant={theme === value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTheme(value)}
-                  className="gap-2"
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
+                <Button key={value} variant={theme === value ? 'default' : 'outline'} size="sm" onClick={() => setTheme(value)} className="gap-2">
+                  <Icon className="h-4 w-4" />{label}
                 </Button>
               ))}
             </div>
@@ -195,6 +293,20 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={leaveConfirm} onOpenChange={setLeaveConfirm}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Leave organization?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">You will lose access to org features. You can rejoin with the join code.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeaveConfirm(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleLeaveOrg} disabled={leaveOrg.isPending}>
+              {leaveOrg.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Leave
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
         <DialogContent>

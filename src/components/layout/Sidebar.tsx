@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   LayoutDashboard, Package, HandshakeIcon, Clock, Users,
-  BarChart2, Star, LogOut, Settings, Zap,
+  BarChart2, Star, LogOut, Settings, Zap, Shield,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -33,6 +33,9 @@ export function Sidebar() {
     toast.success('Signed out')
   }
 
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'org'
+  const isOrgOwner = profile?.org_role === 'owner'
+
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen border-r bg-card fixed left-0 top-0 z-30">
       <div className="p-6 border-b">
@@ -47,7 +50,6 @@ export function Sidebar() {
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map(({ href, label, icon: Icon, proOnly }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/')
-          const isPro = profile?.plan === 'pro'
           const disabled = proOnly && !isPro
 
           return (
@@ -56,9 +58,7 @@ export function Sidebar() {
               href={disabled ? '/upgrade' : href}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                 disabled && 'opacity-50'
               )}
             >
@@ -68,6 +68,19 @@ export function Sidebar() {
             </Link>
           )
         })}
+
+        {isOrgOwner && (
+          <Link
+            href="/org/admin"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+              pathname.startsWith('/org') ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            )}
+          >
+            <Shield className="h-4 w-4" />
+            Org Admin
+          </Link>
+        )}
       </nav>
 
       <div className="p-4 border-t space-y-2">
@@ -75,7 +88,7 @@ export function Sidebar() {
           <Link href="/upgrade">
             <Button variant="outline" size="sm" className="w-full gap-2 border-yellow-400 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950">
               <Zap className="h-4 w-4" />
-              Upgrade to Pro
+              Upgrade
             </Button>
           </Link>
         )}
@@ -89,8 +102,9 @@ export function Sidebar() {
             <p className="text-sm font-medium truncate flex items-center gap-1">
               {profile?.display_name ?? profile?.username}
               {profile?.plan === 'pro' && <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />}
+              {profile?.plan === 'org' && <Shield className="h-3 w-3 text-blue-500" />}
             </p>
-            <p className="text-xs text-muted-foreground truncate">{profile?.plan}</p>
+            <p className="text-xs text-muted-foreground truncate capitalize">{profile?.plan}</p>
           </div>
         </div>
         <div className="flex gap-1">

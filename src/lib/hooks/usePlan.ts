@@ -7,7 +7,7 @@ export function usePlan() {
 
   return {
     plan: profile?.plan ?? 'free',
-    isPro: profile?.plan === 'pro',
+    isPro: profile?.plan === 'pro' || profile?.plan === 'org',
     isFree: !profile || profile.plan === 'free',
     itemLimit: profile?.item_limit ?? 10,
     check: (action: LimitAction, currentCount?: number) =>
