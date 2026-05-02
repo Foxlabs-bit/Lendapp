@@ -25,8 +25,8 @@ export function useUpdateProfile() {
     mutationFn: async (updates: Partial<Profile>) => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-      const { id: _id, created_at: _c, email: _e, ...safeUpdates } = updates
-      const { data, error } = await supabase.from('profiles').upsert({ id: user.id, ...safeUpdates }).eq('id', user.id).select().single()
+      const { id: _id, created_at: _c, ...safeUpdates } = updates
+      const { data, error } = await supabase.from('profiles').update(safeUpdates).eq('id', user.id).select().single()
       if (error) throw error
       return data
     },
