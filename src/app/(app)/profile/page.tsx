@@ -10,10 +10,10 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useProfile, useUpdateProfile } from '@/lib/hooks/useProfile'
-import { useMyOrg, useMyOrgMembership, useLeaveOrg } from '@/lib/hooks/useOrg'
+import { useMyOrg, useMyOrgMembership, useLeaveOrg, useDeleteOrg, useTransferOrg, useOrgMembers } from '@/lib/hooks/useOrg'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from 'next-themes'
-import { Star, Sun, Moon, Monitor, Loader2, AlertTriangle, Shield, Users } from 'lucide-react'
+import { Star, Sun, Moon, Monitor, Loader2, AlertTriangle, Shield, Users, Trash2, ArrowRightLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -23,6 +23,9 @@ export default function ProfilePage() {
   const { data: myOrg } = useMyOrg()
   const { data: membership } = useMyOrgMembership()
   const leaveOrg = useLeaveOrg()
+  const deleteOrg = useDeleteOrg()
+  const transferOrg = useTransferOrg()
+  const { data: orgMembers = [] } = useOrgMembers(myOrg?.id)
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const supabase = createClient()
@@ -36,6 +39,12 @@ export default function ProfilePage() {
   const [joinCode, setJoinCode] = useState('')
   const [joiningOrg, setJoiningOrg] = useState(false)
   const [leaveConfirm, setLeaveConfirm] = useState(false)
+  const [deleteOrgConfirm, setDeleteOrgConfirm] = useState(false)
+  const [transferConfirm, setTransferConfirm] = useState(false)
+  const [selectedNewOwner, setSelectedNewOwner] = useState('')
+  const [proPromo, setProPromo] = useState('')
+  const [showProPromo, setShowProPromo] = useState(false)
+  const [redeemingProPromo, setRedeemingProPromo] = useState(false)
 
   async function handleSaveName() {
     await updateProfile.mutateAsync({ display_name: displayName.trim() || null })
@@ -87,6 +96,49 @@ export default function ProfilePage() {
       setLeaveConfirm(false)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to leave org')
+    }
+  }
+
+  async function handleDeleteOrg() {
+    try {
+      await deleteOrg.mutateAsync()
+      toast.success('Organization deleted')
+      setDeleteOrgConfirm(false)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete org')
+    }
+  }
+
+  async function handleTransferOrg() {
+    if (!selectedNewOwner) return
+    try {
+      await transferOrg.mutateAsync(selectedNewOwner)
+      toast.success('Ownership transferred')
+      setTransferConfirm(false)
+      setSelectedNewOwner('')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to transfer ownership')
+    }
+  }
+
+  async function handleRedeemProPromo() {
+    if (!proPromo.trim()) return
+    setRedeemingProPromo(true)
+    try {
+      const res = await fetch('/api/pro/redeem-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promoCode: proPromo.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Invalid promo code'); return }
+      toast.success('Pro plan activated!')
+      setShowProPromo(false)
+      setProPromo('')
+    } catch {
+      toast.error('Failed to redeem promo code')
+    } finally {
+      setRedeemingProPromo(false)
     }
   }
 
@@ -191,9 +243,31 @@ export default function ProfilePage() {
               </Badge>
             </div>
             {profile?.plan === 'free' && (
-              <Link href="/upgrade">
-                <Button size="sm" className="gap-2">Upgrade — from €4.99/mo</Button>
-              </Link>
+              <div className="space-y-2">
+                <Link href="/upgrade">
+                  <Button size="sm" className="gap-2">Upgrade — from €4.99/mo</Button>
+                </Link>
+                {!showProPromo ? (
+                  <div>
+                    <button onClick={() => setShowProPromo(true)} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
+                      Have a promo code?
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Enter promo code"
+                      value={proPromo}
+                      onChange={e => setProPromo(e.target.value.toUpperCase())}
+                      className="font-mono uppercase text-sm h-8 max-w-[180px]"
+                    />
+                    <Button size="sm" onClick={handleRedeemProPromo} disabled={redeemingProPromo || !proPromo.trim()}>
+                      {redeemingProPromo ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Redeem'}
+                    </Button>
+                    <button onClick={() => setShowProPromo(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                  </div>
+                )}
+              </div>
             )}
             {profile?.plan === 'pro' && (
               <Button variant="outline" size="sm" onClick={handleCancelSubscription}>Cancel Subscription</Button>
@@ -218,11 +292,19 @@ export default function ProfilePage() {
                     <p className="text-xs text-muted-foreground">You are the owner</p>
                   </div>
                 </div>
-                <Link href="/org/admin">
-                  <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                    <Shield className="h-4 w-4" /> Open Admin Panel
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/org/admin">
+                    <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                      <Shield className="h-4 w-4" /> Admin Panel
+                    </Button>
+                  </Link>
+                  <Button size="sm" variant="outline" className="gap-2" onClick={() => setTransferConfirm(true)} disabled={orgMembers.filter(m => m.role !== 'owner').length === 0}>
+                    <ArrowRightLeft className="h-4 w-4" /> Transfer Ownership
                   </Button>
-                </Link>
+                  <Button size="sm" variant="outline" className="gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-950" onClick={() => setDeleteOrgConfirm(true)}>
+                    <Trash2 className="h-4 w-4" /> Delete Org
+                  </Button>
+                </div>
               </>
             )}
 
@@ -317,6 +399,53 @@ export default function ProfilePage() {
             <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleteLoading}>
               {deleteLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Yes, Delete Everything
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOrgConfirm} onOpenChange={setDeleteOrgConfirm}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete organization?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will permanently delete <strong>{myOrg?.name}</strong> and remove all members. Everyone will be downgraded to the free plan. This cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOrgConfirm(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteOrg} disabled={deleteOrg.isPending}>
+              {deleteOrg.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete Organization
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={transferConfirm} onOpenChange={setTransferConfirm}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Transfer ownership</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground mb-3">
+            Select a member to become the new owner. You will become a regular member.
+          </p>
+          <div className="space-y-2">
+            {orgMembers.filter(m => m.role !== 'owner').map(m => (
+              <button
+                key={m.user_id}
+                onClick={() => setSelectedNewOwner(m.user_id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-sm transition-colors ${selectedNewOwner === m.user_id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'}`}
+              >
+                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  {(m.profiles.display_name ?? m.profiles.username)?.[0]?.toUpperCase()}
+                </div>
+                <span>{m.profiles.display_name ?? m.profiles.username}</span>
+                <span className="text-muted-foreground">@{m.profiles.username}</span>
+              </button>
+            ))}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => { setTransferConfirm(false); setSelectedNewOwner('') }}>Cancel</Button>
+            <Button onClick={handleTransferOrg} disabled={!selectedNewOwner || transferOrg.isPending}>
+              {transferOrg.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Transfer Ownership
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -115,3 +115,36 @@ export function useLeaveOrg() {
     },
   })
 }
+
+export function useDeleteOrg() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/org/delete', { method: 'POST' })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-org'] })
+      qc.invalidateQueries({ queryKey: ['profile'] })
+    },
+  })
+}
+
+export function useTransferOrg() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (newOwnerId: string) => {
+      const res = await fetch('/api/org/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newOwnerId }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-org'] })
+      qc.invalidateQueries({ queryKey: ['org-members'] })
+      qc.invalidateQueries({ queryKey: ['profile'] })
+    },
+  })
+}
