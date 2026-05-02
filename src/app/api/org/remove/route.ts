@@ -22,6 +22,9 @@ export async function POST(request: Request) {
     if (!org) return NextResponse.json({ error: 'Not an org owner' }, { status: 403 })
     if (userId === user.id) return NextResponse.json({ error: 'Cannot remove yourself as owner' }, { status: 400 })
 
+    const { data: membership } = await supabase.from('org_members').select('id').eq('org_id', org.id).eq('user_id', userId).maybeSingle()
+    if (!membership) return NextResponse.json({ error: 'User is not a member of your organization' }, { status: 404 })
+
     await supabase.from('org_members').delete().eq('org_id', org.id).eq('user_id', userId)
     await supabase.from('profiles').update({ org_id: null, org_role: null, plan: 'free' }).eq('id', userId)
 

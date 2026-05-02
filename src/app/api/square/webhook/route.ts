@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
 )
 
 function verifySignature(body: string, signature: string | null, sigKey: string): boolean {
-  if (!signature || !sigKey) return true
+  if (!signature || !sigKey) return false
   const hmac = crypto.createHmac('sha256', sigKey)
   hmac.update(body)
   return hmac.digest('base64') === signature
