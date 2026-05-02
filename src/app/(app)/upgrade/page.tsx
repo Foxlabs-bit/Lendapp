@@ -46,6 +46,9 @@ export default function UpgradePage() {
   const [promoCode, setPromoCode] = useState('')
   const [showPromo, setShowPromo] = useState(false)
   const [redeemingPromo, setRedeemingPromo] = useState(false)
+  const [proPromoCode, setProPromoCode] = useState('')
+  const [showProPromo, setShowProPromo] = useState(false)
+  const [redeemingProPromo, setRedeemingProPromo] = useState(false)
   const cardRef = useRef<Awaited<ReturnType<Awaited<ReturnType<typeof window.Square.payments>>['card']>> | null>(null)
 
   useEffect(() => {
@@ -71,6 +74,21 @@ export default function UpgradePage() {
       if (!res.ok) { toast.error((await res.json()).error ?? 'Payment failed'); return }
       setSuccess('pro')
     } catch { toast.error('Payment failed') } finally { setLoading(false) }
+  }
+
+  async function handleRedeemProPromo() {
+    if (!proPromoCode.trim()) return
+    setRedeemingProPromo(true)
+    try {
+      const res = await fetch('/api/pro/redeem-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promoCode: proPromoCode.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Invalid promo code'); return }
+      setSuccess('pro')
+    } catch { toast.error('Failed to redeem promo code') } finally { setRedeemingProPromo(false) }
   }
 
   async function handleRedeemPromo() {
@@ -139,7 +157,7 @@ export default function UpgradePage() {
     const price = isOrg ? seatCount * PRICE_PER_SEAT : 4.99
     return (
       <>
-        <Script src="https://sandbox.web.squarecdn.com/v1/square.js" onReady={() => setSquareReady(true)} />
+        <Script src={process.env.NEXT_PUBLIC_SQUARE_ENV === 'production' ? 'https://web.squarecdn.com/v1/square.js' : 'https://sandbox.web.squarecdn.com/v1/square.js'} onReady={() => setSquareReady(true)} />
         <TopNav title={isOrg ? 'Get Org Plan' : 'Upgrade to Pro'} />
         <div className="p-6 max-w-md mx-auto">
           <button onClick={() => setPaymentMode(null)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
@@ -180,6 +198,34 @@ export default function UpgradePage() {
             </div>
           )}
 
+          {!isOrg && (
+            <div className="mb-4">
+              {!showProPromo ? (
+                <button onClick={() => setShowProPromo(true)} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
+                  Have a promo code?
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-xs">Promo Code</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter code"
+                      value={proPromoCode}
+                      onChange={e => setProPromoCode(e.target.value.toUpperCase())}
+                      className="font-mono uppercase text-sm"
+                    />
+                    <Button onClick={handleRedeemProPromo} disabled={redeemingProPromo || !proPromoCode.trim()} size="sm">
+                      {redeemingProPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Redeem'}
+                    </Button>
+                  </div>
+                  <button onClick={() => setShowProPromo(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Pay with card instead
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {isOrg && (
             <div className="mb-4">
               {!showPromo ? (
@@ -208,7 +254,7 @@ export default function UpgradePage() {
             </div>
           )}
 
-          {!showPromo && (
+          {!showPromo && !showProPromo && (
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Zap className="h-4 w-4" /> Payment details</CardTitle></CardHeader>
               <CardContent className="space-y-4">

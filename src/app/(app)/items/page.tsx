@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useEffect, Suspense } from 'react'
+import { useState, useMemo, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { TopNav } from '@/components/layout/TopNav'
 import { ItemCard } from '@/components/items/ItemCard'
@@ -44,11 +44,21 @@ function ItemsContent() {
   const updateItem = useUpdateItem()
   const deleteItem = useDeleteItem()
 
+  const handleAddClick = useCallback(() => {
+    const result = check('add_item', items.filter(i => !i.is_archived).length)
+    if (!result.allowed) {
+      setUpgradeContext(result.reason ?? '')
+      setUpgradeOpen(true)
+      return
+    }
+    setAddOpen(true)
+  }, [check, items])
+
   useEffect(() => {
     if (searchParams.get('add') === 'true' && !isLoading && profile !== undefined) {
       handleAddClick()
     }
-  }, [searchParams, isLoading, profile])
+  }, [searchParams, isLoading, profile, handleAddClick])
 
   const filtered = useMemo(() => {
     let list = items
@@ -62,16 +72,6 @@ function ItemsContent() {
     else if (sortBy === 'date') list = [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     return list
   }, [items, search, categoryFilter, sortBy, showArchived])
-
-  function handleAddClick() {
-    const result = check('add_item', items.filter(i => !i.is_archived).length)
-    if (!result.allowed) {
-      setUpgradeContext(result.reason ?? '')
-      setUpgradeOpen(true)
-      return
-    }
-    setAddOpen(true)
-  }
 
   async function handleArchive(item: Item) {
     await updateItem.mutateAsync({ id: item.id, is_archived: !item.is_archived })

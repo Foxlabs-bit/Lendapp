@@ -33,13 +33,14 @@ export default function RegisterPage() {
       })
       if (error) throw error
       if (data.user) {
-        await supabase.from('profiles').insert({
+        const { error: profileError } = await supabase.from('profiles').insert({
           id: data.user.id,
           email,
           username,
           plan: 'free',
           item_limit: 10,
         })
+        if (profileError) throw new Error('Account created but profile setup failed. Please contact support.')
         router.push('/dashboard?onboarding=true')
         router.refresh()
       }

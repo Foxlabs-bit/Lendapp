@@ -275,8 +275,8 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Organization */}
-        <Card>
+        {/* Organization — hidden for pro-only users with no org */}
+        {(isOrgOwner || isOrgMember || isPendingMember || profile?.plan !== 'pro') && <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" /> Organization
@@ -328,7 +328,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {!profile?.org_id && !isPendingMember && (
+            {!profile?.org_id && !isPendingMember && profile?.plan !== 'pro' && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Have an org join code? Enter it below to request access.</p>
                 <div className="flex gap-2">
@@ -346,7 +346,7 @@ export default function ProfilePage() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* Theme */}
         <Card>

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { TopNav } from '@/components/layout/TopNav'
 import { UpgradeModal } from '@/components/upgrade/UpgradeModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +20,8 @@ const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6'
 
 export default function StatsPage() {
   const { isPro } = usePlan()
-  const [upgradeOpen, setUpgradeOpen] = useState(!isPro)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  useEffect(() => { if (!isPro) setUpgradeOpen(true) }, [isPro])
   const [dateRange, setDateRange] = useState('12m')
 
   const { data: loans = [], isLoading } = useLoans()
