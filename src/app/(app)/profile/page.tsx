@@ -68,9 +68,10 @@ export default function ProfilePage() {
   }
 
   async function handleCancelSubscription() {
-    const res = await fetch('/api/square/cancel', { method: 'POST' })
+    const res = await fetch('/api/polar/cancel', { method: 'POST' })
+    const data = await res.json()
     if (res.ok) toast.success('Subscription cancelled')
-    else toast.error('Failed to cancel subscription')
+    else toast.error(data.error ?? 'Failed to cancel subscription')
   }
 
   async function handleJoinOrg() {

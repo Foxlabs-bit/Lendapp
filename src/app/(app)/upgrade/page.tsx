@@ -1,7 +1,6 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import Script from 'next/script'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { TopNav } from '@/components/layout/TopNav'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useProfile } from '@/lib/hooks/useProfile'
-import { Check, Zap, Star, Loader2, ArrowLeft, Shield, Users } from 'lucide-react'
+import { Check, Zap, Star, Loader2, ArrowLeft, Shield, Users, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 
 const FREE_FEATURES = ['Up to 10 items', 'Up to 25 loans (lifetime)', 'Basic loan tracking', 'Active loans dashboard']
@@ -19,26 +18,13 @@ const ORG_FEATURES = ['Everything in Pro', 'Multi-user shared workspace', 'Org a
 const SEAT_OPTIONS = [5, 10, 15, 25, 50, 100]
 const PRICE_PER_SEAT = 3
 
-declare global {
-  interface Window {
-    Square: {
-      payments: (appId: string, locationId: string) => Promise<{
-        card: () => Promise<{
-          attach: (selector: string) => Promise<void>
-          tokenize: () => Promise<{ status: string; token?: string; errors?: unknown[] }>
-        }>
-      }>
-    }
-  }
-}
-
 type PaymentMode = null | 'pro' | 'org'
 
-export default function UpgradePage() {
+function UpgradeContent() {
   const { data: profile } = useProfile()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
-  const [squareReady, setSquareReady] = useState(false)
   const [success, setSuccess] = useState<'pro' | 'org' | null>(null)
   const [paymentMode, setPaymentMode] = useState<PaymentMode>(null)
   const [seatCount, setSeatCount] = useState(5)
@@ -49,31 +35,33 @@ export default function UpgradePage() {
   const [proPromoCode, setProPromoCode] = useState('')
   const [showProPromo, setShowProPromo] = useState(false)
   const [redeemingProPromo, setRedeemingProPromo] = useState(false)
-  const cardRef = useRef<Awaited<ReturnType<Awaited<ReturnType<typeof window.Square.payments>>['card']>> | null>(null)
 
+  // Handle return from Polar checkout
   useEffect(() => {
-    if (!paymentMode || !squareReady || !process.env.NEXT_PUBLIC_SQUARE_APP_ID || !process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID) return
-    async function initSquare() {
-      try {
-        const payments = await window.Square.payments(process.env.NEXT_PUBLIC_SQUARE_APP_ID!, process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID!)
-        const card = await payments.card()
-        await card.attach('#card-container')
-        cardRef.current = card
-      } catch (err) { console.error('Square init failed:', err) }
-    }
-    initSquare()
-  }, [paymentMode, squareReady])
+    const s = searchParams.get('success')
+    if (s === 'pro') setSuccess('pro')
+    if (s === 'org') setSuccess('org')
+  }, [searchParams])
 
-  async function handleProPay() {
-    if (!cardRef.current) return
+  async function handleCheckout(type: 'pro' | 'org') {
     setLoading(true)
     try {
-      const result = await cardRef.current.tokenize()
-      if (result.status !== 'OK' || !result.token) { toast.error('Card tokenization failed'); return }
-      const res = await fetch('/api/square/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: result.token }) })
-      if (!res.ok) { toast.error((await res.json()).error ?? 'Payment failed'); return }
-      setSuccess('pro')
-    } catch { toast.error('Payment failed') } finally { setLoading(false) }
+      const res = await fetch('/api/polar/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(type === 'org'
+          ? { type: 'org', orgName: orgName.trim(), seatLimit: seatCount }
+          : { type: 'pro' }
+        ),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error ?? 'Failed to start checkout'); return }
+      window.location.href = data.url
+    } catch {
+      toast.error('Failed to start checkout')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleRedeemProPromo() {
@@ -107,19 +95,6 @@ export default function UpgradePage() {
     } catch { toast.error('Failed to redeem promo code') } finally { setRedeemingPromo(false) }
   }
 
-  async function handleOrgPay() {
-    if (!cardRef.current) return
-    if (!orgName.trim()) { toast.error('Please enter your organization name'); return }
-    setLoading(true)
-    try {
-      const result = await cardRef.current.tokenize()
-      if (result.status !== 'OK' || !result.token) { toast.error('Card tokenization failed'); return }
-      const res = await fetch('/api/square/subscribe-org', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: result.token, orgName: orgName.trim(), seatLimit: seatCount }) })
-      if (!res.ok) { toast.error((await res.json()).error ?? 'Payment failed'); return }
-      setSuccess('org')
-    } catch { toast.error('Payment failed') } finally { setLoading(false) }
-  }
-
   if (profile?.plan === 'pro' || profile?.plan === 'org') {
     return (
       <>
@@ -140,10 +115,14 @@ export default function UpgradePage() {
         <TopNav title="Upgrade" />
         <div className="p-6 max-w-2xl mx-auto text-center py-20">
           <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold mb-2">{success === 'org' ? `Welcome to ${orgName}!` : 'Welcome to Pro!'}</h2>
-          <p className="text-muted-foreground mb-6">
-            {success === 'org' ? 'Your organization is ready. Share the join code with your team.' : 'You now have unlimited items, loans, and all Pro features.'}
+          <h2 className="text-2xl font-bold mb-2">{success === 'org' ? `Welcome to ${orgName || 'your org'}!` : 'Welcome to Pro!'}</h2>
+          <p className="text-muted-foreground mb-2">
+            {success === 'org' ? 'Your organization is being set up — this takes a few seconds.' : 'You now have unlimited items, loans, and all Pro features.'}
           </p>
+          {success === 'org' && (
+            <p className="text-xs text-muted-foreground mb-6">If your org admin panel isn&apos;t ready yet, wait a moment and refresh.</p>
+          )}
+          {success === 'pro' && <p className="text-muted-foreground mb-6" />}
           <Button onClick={() => router.push(success === 'org' ? '/org/admin' : '/dashboard')}>
             {success === 'org' ? 'Go to Org Admin' : 'Go to Dashboard'}
           </Button>
@@ -155,9 +134,9 @@ export default function UpgradePage() {
   if (paymentMode) {
     const isOrg = paymentMode === 'org'
     const price = isOrg ? seatCount * PRICE_PER_SEAT : 4.99
+
     return (
       <>
-        <Script src={process.env.NEXT_PUBLIC_SQUARE_ENV === 'production' ? 'https://web.squarecdn.com/v1/square.js' : 'https://sandbox.web.squarecdn.com/v1/square.js'} onReady={() => setSquareReady(true)} />
         <TopNav title={isOrg ? 'Get Org Plan' : 'Upgrade to Pro'} />
         <div className="p-6 max-w-md mx-auto">
           <button onClick={() => setPaymentMode(null)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
@@ -172,9 +151,7 @@ export default function UpgradePage() {
               </div>
               <span className="text-2xl font-bold">€{price.toFixed(2)}<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
             </div>
-            {isOrg && (
-              <p className="text-xs text-muted-foreground">{seatCount} seats × €{PRICE_PER_SEAT}/seat/mo</p>
-            )}
+            {isOrg && <p className="text-xs text-muted-foreground">{seatCount} seats × €{PRICE_PER_SEAT}/seat/mo</p>}
           </div>
 
           {isOrg && (
@@ -198,37 +175,10 @@ export default function UpgradePage() {
             </div>
           )}
 
-          {!isOrg && (
-            <div className="mb-4">
-              {!showProPromo ? (
-                <button onClick={() => setShowProPromo(true)} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
-                  Have a promo code?
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <Label className="text-xs">Promo Code</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter code"
-                      value={proPromoCode}
-                      onChange={e => setProPromoCode(e.target.value.toUpperCase())}
-                      className="font-mono uppercase text-sm"
-                    />
-                    <Button onClick={handleRedeemProPromo} disabled={redeemingProPromo || !proPromoCode.trim()} size="sm">
-                      {redeemingProPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Redeem'}
-                    </Button>
-                  </div>
-                  <button onClick={() => setShowProPromo(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    Pay with card instead
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {isOrg && (
-            <div className="mb-4">
-              {!showPromo ? (
+          {/* Promo code */}
+          <div className="mb-4">
+            {isOrg ? (
+              !showPromo ? (
                 <button onClick={() => setShowPromo(true)} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
                   Have a promo code?
                 </button>
@@ -236,34 +186,54 @@ export default function UpgradePage() {
                 <div className="space-y-2">
                   <Label className="text-xs">Promo Code</Label>
                   <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter code"
-                      value={promoCode}
-                      onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                      className="font-mono uppercase text-sm"
-                    />
+                    <Input placeholder="Enter code" value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} className="font-mono uppercase text-sm" />
                     <Button onClick={handleRedeemPromo} disabled={redeemingPromo || !promoCode.trim() || !orgName.trim()} size="sm">
                       {redeemingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Redeem'}
                     </Button>
                   </div>
                   <button onClick={() => setShowPromo(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    Pay with card instead
+                    Pay instead
                   </button>
                 </div>
-              )}
-            </div>
-          )}
+              )
+            ) : (
+              !showProPromo ? (
+                <button onClick={() => setShowProPromo(true)} className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
+                  Have a promo code?
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-xs">Promo Code</Label>
+                  <div className="flex gap-2">
+                    <Input placeholder="Enter code" value={proPromoCode} onChange={e => setProPromoCode(e.target.value.toUpperCase())} className="font-mono uppercase text-sm" />
+                    <Button onClick={handleRedeemProPromo} disabled={redeemingProPromo || !proPromoCode.trim()} size="sm">
+                      {redeemingProPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Redeem'}
+                    </Button>
+                  </div>
+                  <button onClick={() => setShowProPromo(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    Pay instead
+                  </button>
+                </div>
+              )
+            )}
+          </div>
 
+          {/* Checkout button — only show when not in promo mode */}
           {!showPromo && !showProPromo && (
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Zap className="h-4 w-4" /> Payment details</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div id="card-container" className="min-h-[80px] border rounded-lg p-3 bg-background" />
-                <Button onClick={isOrg ? handleOrgPay : handleProPay} disabled={loading || !squareReady || (isOrg && !orgName.trim())} className="w-full gap-2">
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                  {loading ? 'Processing...' : `Subscribe for €${price.toFixed(2)}/mo`}
+              <CardContent className="pt-6 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  You&apos;ll be redirected to our secure payment page to complete your subscription.
+                </p>
+                <Button
+                  onClick={() => handleCheckout(paymentMode)}
+                  disabled={loading || (isOrg && !orgName.trim())}
+                  className={`w-full gap-2 ${isOrg ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                  {loading ? 'Redirecting...' : `Subscribe for €${price.toFixed(2)}/mo`}
                 </Button>
-                <p className="text-xs text-center text-muted-foreground">Secured by Square. Cancel anytime from your profile.</p>
+                <p className="text-xs text-center text-muted-foreground">Secured by Polar. Cancel anytime from your profile.</p>
               </CardContent>
             </Card>
           )}
@@ -343,4 +313,8 @@ export default function UpgradePage() {
       </div>
     </>
   )
+}
+
+export default function UpgradePage() {
+  return <Suspense><UpgradeContent /></Suspense>
 }

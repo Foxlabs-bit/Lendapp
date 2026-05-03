@@ -13,10 +13,12 @@ export async function POST() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { data: profile } = await supabase.from('profiles').select('square_subscription_id').eq('id', user.id).single()
-    if (!profile?.square_subscription_id) return NextResponse.json({ error: 'No active subscription' }, { status: 400 })
+    const { data: profile } = await supabase.from('profiles').select('square_subscription_id, plan').eq('id', user.id).single()
+    if (!profile || profile.plan === 'free') return NextResponse.json({ error: 'No active subscription' }, { status: 400 })
 
-    await square.subscriptions.cancel({ subscriptionId: profile.square_subscription_id })
+    if (profile.square_subscription_id) {
+      await square.subscriptions.cancel({ subscriptionId: profile.square_subscription_id })
+    }
 
     await supabase.from('profiles').update({
       plan: 'free',
