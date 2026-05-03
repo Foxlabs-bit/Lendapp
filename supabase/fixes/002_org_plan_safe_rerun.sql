@@ -1,8 +1,8 @@
--- =============================================
+-- =============================================---
 -- LEND APP — Org Plan Migrations (safe re-run)
 -- Run this in: https://supabase.com/dashboard/project/nunygjzicawqvskxnawf/sql
 -- Safe to run even if partially applied before
--- =============================================
+-- =============================================---
 
 -- Add 'org' to plan_tier enum (safe if already exists)
 ALTER TYPE plan_tier ADD VALUE IF NOT EXISTS 'org';
