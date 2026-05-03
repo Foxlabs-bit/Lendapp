@@ -42,8 +42,7 @@ export default function RegisterPage() {
           const d = await res.json()
           throw new Error(d.error ?? 'Profile setup failed. Please contact support.')
         }
-        router.push('/dashboard?onboarding=true')
-        router.refresh()
+        router.push('/verify-email')
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Registration failed')
@@ -89,6 +88,11 @@ export default function RegisterPage() {
             <p className="text-center text-sm text-muted-foreground mt-4">
               Already have an account?{' '}
               <Link href="/login" className="text-primary hover:underline">Sign in</Link>
+            </p>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              By signing up you agree to our{' '}
+              <Link href="/terms" className="hover:underline">Terms</Link> and{' '}
+              <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
             </p>
           </CardContent>
         </Card>
