@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { useItems } from '@/lib/hooks/useItems'
 import { useLoans } from '@/lib/hooks/useLoans'
@@ -34,6 +35,7 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="p-0 max-w-lg">
+        <VisuallyHidden><DialogTitle>Command Palette</DialogTitle></VisuallyHidden>
         <Command className="rounded-lg">
           <CommandInput placeholder="Search items, loans, borrowers..." />
           <CommandList>
