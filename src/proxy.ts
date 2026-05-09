@@ -34,7 +34,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/verify-email') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/reset-password') ||
-    pathname.startsWith('/auth/confirm')
+    pathname.startsWith('/auth/confirm') ||
+    pathname.startsWith('/scan/')
 
   if (!user && !isAuthPage && !isPublicPage) {
     return NextResponse.redirect(new URL('/login', request.url))
@@ -48,5 +49,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/square/webhook|api/polar/webhook).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/square/webhook|api/polar/webhook|api/scan/loan).*)'],
 }

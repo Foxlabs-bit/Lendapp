@@ -6,9 +6,11 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useLoans } from '@/lib/hooks/useLoans'
+import { usePlan } from '@/lib/hooks/usePlan'
 import { CATEGORY_COLORS, STATUS_COLORS, formatDate, formatCurrency } from '@/lib/utils/formatters'
 import type { Item } from '@/lib/supabase/types'
-import { Calendar, DollarSign, Hash, StickyNote, Edit } from 'lucide-react'
+import { Calendar, DollarSign, Hash, StickyNote, Edit, QrCode, Lock } from 'lucide-react'
+import { ItemQRCode } from './ItemQRCode'
 
 interface ItemDetailSheetProps {
   item: Item | null
@@ -19,6 +21,7 @@ interface ItemDetailSheetProps {
 
 export function ItemDetailSheet({ item, open, onClose, onEdit }: ItemDetailSheetProps) {
   const { data: allLoans = [], isLoading } = useLoans()
+  const { isPro } = usePlan()
   const itemLoans = allLoans.filter(l => l.item_id === item?.id)
   const activeLoans = itemLoans.filter(l => l.status === 'active' || l.status === 'overdue')
   const loanHistory = itemLoans.filter(l => l.status !== 'active' && l.status !== 'overdue')
@@ -135,6 +138,27 @@ export function ItemDetailSheet({ item, open, onClose, onEdit }: ItemDetailSheet
                 </div>
               </>
             )}
+
+            <Separator />
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <QrCode className="h-4 w-4" />
+                <h3 className="font-semibold">QR Code</h3>
+                {!isPro && (
+                  <Badge variant="secondary" className="text-xs gap-1 ml-auto">
+                    <Lock className="h-3 w-3" /> Pro
+                  </Badge>
+                )}
+              </div>
+              {isPro ? (
+                <ItemQRCode itemId={item.id} itemName={item.name} />
+              ) : (
+                <div className="bg-muted/50 rounded-xl p-4 text-center space-y-1.5">
+                  <p className="text-sm font-medium">Scan-to-borrow QR codes</p>
+                  <p className="text-xs text-muted-foreground">Upgrade to Pro to generate QR codes. Anyone with the code can borrow this item from their phone — no login needed.</p>
+                </div>
+              )}
+            </div>
           </div>
         </ScrollArea>
 
