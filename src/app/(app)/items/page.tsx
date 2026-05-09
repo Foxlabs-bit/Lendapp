@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { TopNav } from '@/components/layout/TopNav'
 import { ItemCard } from '@/components/items/ItemCard'
 import { ItemTable } from '@/components/items/ItemTable'
@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 
 function ItemsContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'availability'>('date')
@@ -57,8 +58,9 @@ function ItemsContent() {
   useEffect(() => {
     if (searchParams.get('add') === 'true' && !isLoading && profile !== undefined) {
       handleAddClick()
+      router.replace('/items')
     }
-  }, [searchParams, isLoading, profile, handleAddClick])
+  }, [searchParams, isLoading, profile, handleAddClick, router])
 
   const filtered = useMemo(() => {
     let list = items
