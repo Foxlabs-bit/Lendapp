@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,8 @@ import { useItems } from '@/lib/hooks/useItems'
 import { usePlan } from '@/lib/hooks/usePlan'
 import { EMOJI_OPTIONS, ITEM_CATEGORIES } from '@/lib/utils/formatters'
 import { UpgradeModal } from '@/components/upgrade/UpgradeModal'
+import { createClient } from '@/lib/supabase/client'
+import { ImagePlus, X, Loader2 as SpinnerIcon } from 'lucide-react'
 import type { Item, ItemCategory } from '@/lib/supabase/types'
 
 interface AddItemModalProps {
@@ -45,13 +47,18 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
   const [serialNumber, setSerialNumber] = useState('')
   const [purchasePrice, setPurchasePrice] = useState('')
   const [notes, setNotes] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [upgradeContext, setUpgradeContext] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const createItem = useCreateItem()
   const updateItem = useUpdateItem()
   const { data: items } = useItems()
-  const { check } = usePlan()
+  const { check, isPro } = usePlan()
+  const supabase = createClient()
 
   useEffect(() => {
     if (editItem) {
@@ -63,6 +70,8 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
       setSerialNumber(editItem.serial_number ?? '')
       setPurchasePrice(editItem.purchase_price?.toString() ?? '')
       setNotes(editItem.notes ?? '')
+      setImagePreview(editItem.image_url ?? null)
+      setImageFile(null)
     } else {
       resetForm()
     }
@@ -78,6 +87,44 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
     setSerialNumber('')
     setPurchasePrice('')
     setNotes('')
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  function handleImageClick() {
+    const limitResult = check('upload_image')
+    if (!limitResult.allowed) {
+      setUpgradeContext(limitResult.upgradeMessage ?? 'Upgrade to Pro to upload photos')
+      setShowUpgrade(true)
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  async function uploadImage(userId: string): Promise<string | null> {
+    if (!imageFile) return imagePreview
+    setUploadingImage(true)
+    try {
+      const ext = imageFile.name.split('.').pop()
+      const path = `${userId}/${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('item-images').upload(path, imageFile, { upsert: true, contentType: imageFile.type })
+      if (error) throw error
+      const { data: urlData } = supabase.storage.from('item-images').getPublicUrl(path)
+      return urlData.publicUrl
+    } catch {
+      toast.error('Failed to upload image')
+      return null
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   function handleClose() {
@@ -104,6 +151,9 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
     }
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const imageUrl = user ? await uploadImage(user.id) : null
+
       const payload = {
         name: name.trim(),
         emoji,
@@ -113,12 +163,13 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
         serial_number: serialNumber.trim() || null,
         purchase_price: purchasePrice ? parseFloat(purchasePrice) : null,
         notes: notes.trim() || null,
+        image_url: imageUrl,
       }
       if (editItem) {
         await updateItem.mutateAsync({ id: editItem.id, ...payload })
         toast.success(`"${name}" updated`)
       } else {
-        await createItem.mutateAsync({ ...payload, image_url: null, purchase_date: null, is_archived: false })
+        await createItem.mutateAsync({ ...payload, purchase_date: null, is_archived: false })
         toast.success(`"${name}" added to your library`)
       }
       handleClose()
@@ -155,6 +206,27 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
               />
+            </div>
+
+            {/* Photo */}
+            <div className="space-y-1.5">
+              <Label>Photo {!isPro && <span className="text-xs text-muted-foreground ml-1">— Pro</span>}</Label>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+              {imagePreview ? (
+                <div className="relative w-full h-40 rounded-lg overflow-hidden border">
+                  <img src={imagePreview} alt="Item" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => { setImageFile(null); setImagePreview(null) }}
+                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={handleImageClick}
+                  className="w-full h-24 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                  {uploadingImage ? <SpinnerIcon className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+                  <span className="text-xs">{isPro ? 'Click to upload photo' : 'Pro feature — upgrade to add photos'}</span>
+                </button>
+              )}
             </div>
 
             {/* Emoji picker */}
@@ -271,7 +343,7 @@ export function AddItemModal({ open, onClose, editItem }: AddItemModalProps) {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={createItem.isPending || updateItem.isPending}
+                disabled={createItem.isPending || updateItem.isPending || uploadingImage}
               >
                 {editItem ? (updateItem.isPending ? 'Saving...' : 'Save Changes') : (createItem.isPending ? 'Adding...' : 'Add Item')}
               </Button>
