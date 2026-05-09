@@ -57,13 +57,14 @@ export function ItemQRCode({ itemId, itemName }: ItemQRCodeProps) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div ref={canvasRef} className="bg-white p-3 rounded-xl">
+      <div ref={canvasRef} className="bg-white p-3 rounded-xl flex flex-col items-center gap-2">
         <QRCodeCanvas
           value={scanUrl}
           size={160}
           level="M"
           includeMargin={false}
         />
+        <p className="text-[11px] font-semibold text-black text-center leading-tight px-1">{itemName}</p>
       </div>
       <p className="text-xs text-muted-foreground text-center">Scan to borrow this item</p>
       <div className="flex gap-2 w-full">
