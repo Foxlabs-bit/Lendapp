@@ -9,7 +9,7 @@ export const CURRENT_VERSION = '1.2.1'
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '1.2.1',
-    date: '2026-05-14 19:00 UTC',
+    date: '2026-05-14 11:22 CEST',
     changes: [
       'Photos now save to items when added through Quick Lend (Pro)',
       'Save a borrower to contacts directly from Quick Lend (Pro)',
