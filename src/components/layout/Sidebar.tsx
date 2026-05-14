@@ -21,7 +21,7 @@ const navItems = [
   { href: '/stats', label: 'Statistics', icon: BarChart2, proOnly: true },
 ]
 
-export function Sidebar() {
+export function Sidebar({ onQuickLend }: { onQuickLend?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const { data: profile } = useProfile()
@@ -45,6 +45,13 @@ export function Sidebar() {
           </div>
           <span className="font-bold text-lg">Lend</span>
         </Link>
+      </div>
+
+      <div className="px-4 pt-4">
+        <Button className="w-full gap-2" onClick={onQuickLend}>
+          <Zap className="h-4 w-4" />
+          Quick Lend
+        </Button>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
