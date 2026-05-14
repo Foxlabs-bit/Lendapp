@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [agreed, setAgreed] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -80,7 +81,21 @@ export default function RegisterPage() {
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={8} required />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={e => setAgreed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-input cursor-pointer"
+                />
+                <span className="text-sm text-muted-foreground leading-snug">
+                  I agree to the{' '}
+                  <Link href="/terms" target="_blank" className="text-foreground hover:underline">Terms of Service</Link>
+                  {' '}and{' '}
+                  <Link href="/privacy" target="_blank" className="text-foreground hover:underline">Privacy Policy</Link>
+                </span>
+              </label>
+              <Button type="submit" className="w-full" disabled={loading || !agreed}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>
@@ -88,11 +103,6 @@ export default function RegisterPage() {
             <p className="text-center text-sm text-muted-foreground mt-4">
               Already have an account?{' '}
               <Link href="/login" className="text-primary hover:underline">Sign in</Link>
-            </p>
-            <p className="text-center text-xs text-muted-foreground mt-3">
-              By signing up you agree to our{' '}
-              <Link href="/terms" className="hover:underline">Terms</Link> and{' '}
-              <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
             </p>
           </CardContent>
         </Card>
