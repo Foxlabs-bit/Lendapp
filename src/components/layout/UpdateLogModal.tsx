@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { X, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog'
 
 const STORAGE_KEY = 'lend_seen_version'
@@ -26,22 +26,14 @@ export function UpdateLogModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-card border rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary rounded-lg p-1.5">
-              <Zap className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div>
-              <h2 className="font-bold text-base leading-tight">What&apos;s new in Lend</h2>
-              <p className="text-xs text-muted-foreground">v{latest.version} · {latest.date}</p>
-            </div>
+        <div className="flex items-center gap-2 p-5 border-b">
+          <div className="bg-primary rounded-lg p-1.5">
+            <Zap className="h-4 w-4 text-primary-foreground" />
           </div>
-          <button
-            onClick={dismiss}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div>
+            <h2 className="font-bold text-base leading-tight">What&apos;s new in Lend</h2>
+            <p className="text-xs text-muted-foreground">v{latest.version} · {latest.date}</p>
+          </div>
         </div>
 
         {/* Changes */}
