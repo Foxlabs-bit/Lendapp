@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const CURRENT_VERSION = '1.2.0'
+export const CURRENT_VERSION = '1.2.1'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.2.1',
+    date: '2026-05-14 19:00 UTC',
+    changes: [
+      'Photos now save to items when added through Quick Lend (Pro)',
+      'Save a borrower to contacts directly from Quick Lend (Pro)',
+      'Borrower loan count now updates correctly when a loan is created',
+    ],
+  },
   {
     version: '1.2.0',
     date: '2026-05-14 17:30 UTC',
