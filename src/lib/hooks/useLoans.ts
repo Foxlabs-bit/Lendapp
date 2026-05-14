@@ -50,11 +50,25 @@ export function useCreateLoan() {
         event_type: 'created',
         metadata: { borrower_name: loan.borrower_name },
       })
+      if (loan.borrower_id) {
+        const { data: borrower } = await supabase
+          .from('borrowers')
+          .select('total_loans')
+          .eq('id', loan.borrower_id)
+          .single()
+        if (borrower) {
+          await supabase
+            .from('borrowers')
+            .update({ total_loans: (borrower.total_loans ?? 0) + 1 })
+            .eq('id', loan.borrower_id)
+        }
+      }
       return loanData
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['loans'] })
       qc.invalidateQueries({ queryKey: ['items'] })
+      qc.invalidateQueries({ queryKey: ['borrowers'] })
     },
   })
 }
