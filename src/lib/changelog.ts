@@ -1,0 +1,38 @@
+export interface ChangelogEntry {
+  version: string
+  date: string
+  changes: string[]
+}
+
+export const CURRENT_VERSION = '1.2.0'
+
+export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.2.0',
+    date: '2026-05-14 17:30 UTC',
+    changes: [
+      'Quick Lend — lend anything in seconds from the sidebar or the mobile button',
+      'Take an optional photo when quick lending to remember what it looks like',
+      'Terms of Service and Privacy Policy must be accepted when signing up',
+      'Scan a QR code to borrow an item instantly — no login needed (Pro)',
+    ],
+  },
+  {
+    version: '1.1.0',
+    date: '2026-05-10 12:00 UTC',
+    changes: [
+      'Add photos to your items (Pro)',
+      'Email confirmation and password reset now fully working',
+      'Terms of Service and Privacy Policy pages added',
+    ],
+  },
+  {
+    version: '1.0.0',
+    date: '2026-05-03 10:00 UTC',
+    changes: [
+      'Initial release — item library, active loans, and loan history',
+      'Free and Pro plans',
+      'Org plan with team support',
+    ],
+  },
+]

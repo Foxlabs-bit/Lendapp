@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { CommandPalette } from './CommandPalette'
 import { QuickLendModal } from '@/components/loans/QuickLendModal'
+import { UpdateLogModal } from './UpdateLogModal'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [quickOpen, setQuickOpen] = useState(false)
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Button>
 
       <QuickLendModal open={quickOpen} onClose={() => setQuickOpen(false)} />
+      <UpdateLogModal />
     </div>
   )
 }
