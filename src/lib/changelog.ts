@@ -4,9 +4,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const CURRENT_VERSION = '1.2.2'
+export const CURRENT_VERSION = '1.2.3'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.2.3',
+    date: '2026-05-17 16:02 CEST',
+    changes: [
+      'Quick Lend now suggests contacts as you type — tap one to fill instantly',
+      'Add a new name to your contacts right from Quick Lend with one tap',
+    ],
+  },
   {
     version: '1.2.2',
     date: '2026-05-17 15:52 CEST',
