@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const CURRENT_VERSION = '1.2.5'
+export const CURRENT_VERSION = '1.3.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.3.0',
+    date: '2026-05-17 16:18 CEST',
+    changes: [
+      'Borrowers with an email now receive a confirmation when you log a loan',
+      'Overdue loans automatically send a reminder email to the borrower each morning',
+      'Loans past their due date are now automatically marked as overdue daily',
+    ],
+  },
   {
     version: '1.2.5',
     date: '2026-05-17 16:08 CEST',

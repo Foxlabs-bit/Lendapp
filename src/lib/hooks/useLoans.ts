@@ -63,6 +63,15 @@ export function useCreateLoan() {
             .eq('id', loan.borrower_id)
         }
       }
+      // Fire-and-forget: email the borrower if they have an email on file
+      if (loan.borrower_id) {
+        fetch('/api/loans/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ loanId: loanData.id }),
+        }).catch(() => {})
+      }
+
       return loanData
     },
     onSuccess: () => {

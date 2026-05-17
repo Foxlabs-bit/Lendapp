@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Package, Check, Zap, Star, Shield, Users, Bell, BarChart2, BookUser, ImageIcon, ArrowRight, HandshakeIcon } from 'lucide-react'
+import { Package, Check, Zap, Star, Shield, Users, Bell, BarChart2, BookUser, ImageIcon, ArrowRight, HandshakeIcon, QrCode, Mail } from 'lucide-react'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -104,6 +104,34 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* How it works */}
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Up and running in 60 seconds</h2>
+            <p className="text-muted-foreground text-lg">No spreadsheets. No sticky notes. Just Lend.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {[
+              { step: '1', icon: Package, title: 'Add your items', desc: 'Create your item library — anything from power tools to books to camera gear.' },
+              { step: '2', icon: Zap, title: 'Log a loan', desc: 'Tap Quick Lend, type the item and borrower\'s name, pick a return date. Done in seconds.' },
+              { step: '3', icon: Bell, title: 'Get notified', desc: 'Borrowers receive an email confirmation. You both get reminders when it\'s due back.' },
+            ].map(({ step, icon: Icon, title, desc }) => (
+              <div key={step} className="relative text-center">
+                <div className="relative inline-flex">
+                  <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+                    <Icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">{step}</span>
+                </div>
+                <h3 className="font-semibold text-base mb-2">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="py-24 px-6 bg-muted/30">
         <div className="max-w-5xl mx-auto">
@@ -118,6 +146,8 @@ export default async function HomePage() {
               { icon: BookUser, title: 'Borrower contacts', desc: 'Build a contact book of everyone you\'ve lent to. See their full borrowing history.', color: 'text-green-500 bg-green-500/10', pro: true },
               { icon: BarChart2, title: 'Statistics & insights', desc: 'See return rates, top borrowers, most lent items, and trends over time.', color: 'text-purple-500 bg-purple-500/10', pro: true },
               { icon: ImageIcon, title: 'Item photos', desc: 'Attach photos to any item so you can always prove its condition when lent.', color: 'text-pink-500 bg-pink-500/10', pro: true },
+              { icon: QrCode, title: 'QR scan to borrow', desc: 'Print a QR code for any item. Anyone can scan it to log a loan — no account needed.', color: 'text-teal-500 bg-teal-500/10', pro: true },
+              { icon: Mail, title: 'Email notifications', desc: 'Borrowers get an email when you log a loan and a reminder if they go overdue.', color: 'text-orange-500 bg-orange-500/10', pro: true },
               { icon: Users, title: 'Team workspaces', desc: 'Share an inventory with your whole team. Everyone sees what\'s lent, by whom.', color: 'text-indigo-500 bg-indigo-500/10', org: true },
             ].map(({ icon: Icon, title, desc, color, pro, org }) => (
               <div key={title} className="rounded-xl border border-border bg-card p-6 relative">
@@ -254,6 +284,8 @@ export default async function HomePage() {
             <Link href="/login" className="hover:text-foreground transition-colors">Sign in</Link>
             <Link href="/register" className="hover:text-foreground transition-colors">Sign up</Link>
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
           </div>
           <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Lend. All rights reserved.</p>
         </div>
