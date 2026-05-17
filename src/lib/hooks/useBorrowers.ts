@@ -45,7 +45,9 @@ export function useUpdateBorrower() {
 
   return useMutation({
     mutationFn: async ({ id, created_at: _c, owner_id: _o, ...updates }: Partial<Borrower> & { id: string }) => {
-      const { data, error } = await supabase.from('borrowers').update(updates).eq('id', id).select().single()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+      const { data, error } = await supabase.from('borrowers').update(updates).eq('id', id).eq('owner_id', user.id).select().single()
       if (error) throw error
       return data
     },
@@ -59,7 +61,9 @@ export function useDeleteBorrower() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('borrowers').delete().eq('id', id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+      const { error } = await supabase.from('borrowers').delete().eq('id', id).eq('owner_id', user.id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['borrowers'] }),

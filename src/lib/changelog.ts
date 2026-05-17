@@ -4,9 +4,17 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const CURRENT_VERSION = '1.2.1'
+export const CURRENT_VERSION = '1.2.2'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.2.2',
+    date: '2026-05-17 15:52 CEST',
+    changes: [
+      'Returning, extending, and marking a loan as lost now correctly enforces ownership',
+      'Organization setup now correctly fails if the owner could not be added as a member',
+    ],
+  },
   {
     version: '1.2.1',
     date: '2026-05-14 11:22 CEST',

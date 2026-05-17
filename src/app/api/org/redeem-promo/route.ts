@@ -62,7 +62,10 @@ export async function POST(request: Request) {
       status: 'active',
       joined_at: new Date().toISOString(),
     })
-    if (memberError) console.error('org_members insert error:', JSON.stringify(memberError))
+    if (memberError) {
+      console.error('org_members insert error:', JSON.stringify(memberError))
+      return NextResponse.json({ error: memberError.message ?? 'Failed to add owner as member' }, { status: 500 })
+    }
 
     const { error: profileError } = await supabase.from('profiles').update({
       plan: 'org',

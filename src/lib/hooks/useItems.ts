@@ -40,7 +40,9 @@ export function useUpdateItem() {
 
   return useMutation({
     mutationFn: async ({ id, created_at: _c, owner_id: _o, ...updates }: Partial<Item> & { id: string }) => {
-      const { data, error } = await supabase.from('items').update(updates).eq('id', id).select().single()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+      const { data, error } = await supabase.from('items').update(updates).eq('id', id).eq('owner_id', user.id).select().single()
       if (error) throw error
       return data
     },
@@ -57,7 +59,9 @@ export function useDeleteItem() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('items').delete().eq('id', id)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+      const { error } = await supabase.from('items').delete().eq('id', id).eq('owner_id', user.id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['items'] }),

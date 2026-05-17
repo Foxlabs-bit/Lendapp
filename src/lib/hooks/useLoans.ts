@@ -80,11 +80,13 @@ export function useReturnLoan() {
   return useMutation({
     mutationFn: async ({ id, condition_in, notes }: { id: string; condition_in?: string; notes?: string }) => {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
       const today = new Date().toISOString().split('T')[0]
       const { data, error } = await supabase
         .from('loans')
         .update({ status: 'returned', returned_at: today, condition_in, notes })
         .eq('id', id)
+        .eq('owner_id', user.id)
         .select()
         .single()
       if (error) throw error
@@ -112,10 +114,12 @@ export function useExtendLoan() {
   return useMutation({
     mutationFn: async ({ id, due_at }: { id: string; due_at: string }) => {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
       const { data, error } = await supabase
         .from('loans')
         .update({ due_at, status: 'active' })
         .eq('id', id)
+        .eq('owner_id', user.id)
         .select()
         .single()
       if (error) throw error
@@ -140,10 +144,12 @@ export function useMarkLost() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
       const { data, error } = await supabase
         .from('loans')
         .update({ status: 'lost' })
         .eq('id', id)
+        .eq('owner_id', user.id)
         .select()
         .single()
       if (error) throw error
