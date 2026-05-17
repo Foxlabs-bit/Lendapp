@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { addDays, format } from 'date-fns'
-import { Camera, X, Loader2, Zap, UserPlus } from 'lucide-react'
+import { Camera, X, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -288,19 +288,15 @@ export function QuickLendModal({ open, onClose }: Props) {
                 )}
               </div>
               {isPro && isNewBorrower && borrowerName.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setSaveToContacts(v => !v)}
-                  className={cn(
-                    'flex items-center gap-2 text-sm px-2 py-1 rounded-md transition-colors w-full',
-                    saveToContacts
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  )}
-                >
-                  <UserPlus className="h-3.5 w-3.5 shrink-0" />
-                  {saveToContacts ? `Saving "${borrowerName.trim()}" to contacts` : `Add "${borrowerName.trim()}" to contacts`}
-                </button>
+                <label className="flex items-center gap-2 text-sm cursor-pointer mt-1">
+                  <input
+                    type="checkbox"
+                    checked={saveToContacts}
+                    onChange={e => setSaveToContacts(e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  Save &quot;{borrowerName.trim()}&quot; to contacts
+                </label>
               )}
             </div>
 

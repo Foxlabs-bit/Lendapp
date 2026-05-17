@@ -4,14 +4,15 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const CURRENT_VERSION = '1.2.4'
+export const CURRENT_VERSION = '1.2.5'
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '1.2.4',
-    date: '2026-05-17 16:07 CEST',
+    version: '1.2.5',
+    date: '2026-05-17 16:08 CEST',
     changes: [
       'Item images now load from cache after the first view — faster and uses far less storage bandwidth',
+      'Fixed save-to-contacts option in Quick Lend',
     ],
   },
   {
