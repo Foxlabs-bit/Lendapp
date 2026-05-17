@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -134,10 +135,14 @@ export function ItemCard({ item, onEdit, onArchive, onDelete, onClick }: ItemCar
       >
         {/* Image or emoji background */}
         {item.image_url ? (
-          <div
-            className="h-32 bg-cover bg-center relative"
-            style={{ backgroundImage: `url(${item.image_url})` }}
-          >
+          <div className="h-32 relative overflow-hidden">
+            <Image
+              src={item.image_url}
+              alt={item.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
           </div>
         ) : (

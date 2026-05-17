@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,7 +77,15 @@ export function ScanClient({ item }: { item: ScanItem }) {
           {/* Item card */}
           <div className="bg-background rounded-2xl border overflow-hidden shadow-sm">
             {item.image_url ? (
-              <div className="h-52 bg-cover bg-center" style={{ backgroundImage: `url(${item.image_url})` }} />
+              <div className="h-52 relative overflow-hidden">
+                <Image
+                  src={item.image_url}
+                  alt={item.name}
+                  fill
+                  className="object-cover"
+                  sizes="448px"
+                />
+              </div>
             ) : (
               <div className="h-52 bg-muted flex items-center justify-center text-7xl">
                 {item.emoji}
