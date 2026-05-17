@@ -4,9 +4,16 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const CURRENT_VERSION = '1.3.1'
+export const CURRENT_VERSION = '1.3.2'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.3.2',
+    date: '2026-05-17 16:41 CEST',
+    changes: [
+      'Fixed domain name in dashboard preview on homepage',
+    ],
+  },
   {
     version: '1.3.1',
     date: '2026-05-17 16:26 CEST',
