@@ -4,9 +4,16 @@ export interface ChangelogEntry {
   changes: string[]
 }
 
-export const CURRENT_VERSION = '1.3.2'
+export const CURRENT_VERSION = '1.3.3'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.3.3',
+    date: '2026-05-18 16:43 CEST',
+    changes: [
+      'Fixed a build error in the overdue email job',
+    ],
+  },
   {
     version: '1.3.2',
     date: '2026-05-17 16:41 CEST',
