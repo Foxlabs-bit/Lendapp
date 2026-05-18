@@ -34,11 +34,11 @@ export async function POST(request: Request) {
     const item = loan.items as { name: string } | null
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('display_name')
       .eq('id', user.id)
       .maybeSingle()
 
-    const ownerName = profile?.full_name ?? 'Someone'
+    const ownerName = profile?.display_name ?? 'Someone'
 
     await sendLoanCreatedEmail({
       to: borrower.email,

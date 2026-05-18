@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     // Look up owner name
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('display_name')
       .eq('id', loan.owner_id)
       .maybeSingle()
 
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
         to: borrower.email,
         borrowerName: borrower.name,
         itemName: item?.name ?? loan.borrower_name,
-        ownerName: profile?.full_name ?? 'the owner',
+        ownerName: profile?.display_name ?? 'the owner',
         dueDate: loan.due_at,
       })
       emailsSent++
