@@ -4,6 +4,14 @@ import { cookies } from 'next/headers'
 import type { Database } from '@/lib/supabase/types'
 import { sendLoanCreatedEmail } from '@/lib/email'
 
+type NotifyLoan = {
+  borrower_name: string
+  due_at: string
+  notes: string | null
+  items: { name: string } | null
+  borrowers: { name: string; email: string | null } | null
+}
+
 export async function POST(request: Request) {
   try {
     const { loanId } = await request.json()
@@ -19,19 +27,20 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const { data: loan } = await supabase
+    const { data: loanRaw } = await supabase
       .from('loans')
-      .select('*, items(name), borrowers(name, email)')
+      .select('borrower_name, due_at, notes, items(name), borrowers(name, email)')
       .eq('id', loanId)
       .eq('owner_id', user.id)
       .single()
 
+    const loan = loanRaw as NotifyLoan | null
     if (!loan) return NextResponse.json({ error: 'Loan not found' }, { status: 404 })
 
-    const borrower = loan.borrowers as { name: string; email: string | null } | null
+    const borrower = loan.borrowers
     if (!borrower?.email) return NextResponse.json({ skipped: true })
 
-    const item = loan.items as { name: string } | null
+    const item = loan.items
     const { data: profile } = await supabase
       .from('profiles')
       .select('display_name')
